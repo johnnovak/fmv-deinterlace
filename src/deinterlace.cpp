@@ -264,16 +264,29 @@ void deinterlace(std::vector<uint32_t>& src, std::vector<uint64_t>& mask,
 
 			for (auto x = 0; x < 64; ++x) {
 				if (m & 1) {
-					*out |= *in;
+					const auto in_buf = *in;
+
+					// Deinterlacing strength params
+					//
+					// low     1 / 2
+					// medium  2 / 3
+					// high    4 / 5
+					// subtle  8 / 9
+					// full    1 / 1
+
+					uint64_t scaled = 0;
+					scaled |=   (in_buf        & 0xff) * 8 / 9;
+					scaled |= (((in_buf >> 8)  & 0xff) * 8 / 9) << 8;
+					scaled |= (((in_buf >> 16) & 0xff) * 8 / 9) << 16;
+
+					*out |= scaled;
 				}
 				m >>= 1;
 				++out;
 				++in;
 			}
-
 			++mask;
 		}
-
 		mask_line += buffer_pitch;
 	}
 }
@@ -346,16 +359,21 @@ int main(int argc, char* argv[])
 
 	std::vector<uint64_t> durations_ns;
 
-//	constexpr auto NumIterations = 1;
-	constexpr auto NumIterations = 200;
+	constexpr auto NumIterations = 1;
+//	constexpr auto NumIterations = 200;
 
-	srand(time(NULL));
+	// for benchmarking
+//	constexpr auto NumIterations = 200;
+
+	// for benchmarking
+//	srand(time(NULL));
 
 	for (auto it = 0; it < NumIterations; ++it) {
 
-		for (auto& x : input_image) {
-			x = rand();
-		}
+		// for benchmarking
+		// for (auto& x : input_image) {
+		// 	x = rand();
+		// }
 
 		auto start = std::chrono::high_resolution_clock::now();
 #if 1
