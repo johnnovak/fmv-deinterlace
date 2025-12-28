@@ -52,44 +52,20 @@ void threshold(std::vector<uint32_t>& src, std::vector<uint8_t>& dest)
 	for (auto y = 0; y < image_height; ++y) {
 		auto out = out_line;
 
-		for (auto x = 0; x < image_width; ++x) {
-			// Make sure alpha channel is set to zero
-			auto a = *in & 0x00ffffff;
-
-			// Create a mask where all non-black pixels are 0xff
-			*out = (a > 0) ? 0xff : 0;
-
-			++in;
-			++out;
-		}
-
-		out_line += buffer_pitch;
-	}
-}
-
-void threshold_8(std::vector<uint32_t>& src, std::vector<uint8_t>& dest)
-{
-	auto in       = src.data();
-	auto out_line = dest.data() + buffer_offset + buffer_pitch;
-
-	for (auto y = 0; y < image_height; ++y) {
-		auto out = out_line;
-
 		for (auto x = 0; x < image_width / 8; ++x) {
-			uint64_t out_buf = 0;
+			uint8_t m = 0;
 
-			// Make sure alpha channel is set to zero
 			for (auto n = 0; n < 8; ++n) {
-				out_buf >>= 8;
-				auto a = *in & 0x00ffffff;
+				// Make sure the alpha channel is set to zero
+				const auto a1 = *in & 0x00ffffff;
 				++in;
 
-				// Create a mask where all non-black pixels are 0xff
-				out_buf |= (a > 0) ? (static_cast<uint64_t>(0xff) << 56) : 0;
+				// Non-black pixels are set to 1 in the bit mask
+				m |= (a1 > 0) << n;
 			}
 
-			*((uint64_t*)out) = out_buf;
-			out += 8;
+			*out = m;
+			++out;
 		}
 
 		out_line += buffer_pitch;
@@ -292,19 +268,40 @@ void deinterlace(std::vector<uint32_t>& src, std::vector<uint8_t>& mask,
 	}
 }
 
-//#define WRITE_PASSES
+#define WRITE_PASSES
 
 void write_buffer(const char* filename, std::vector<uint8_t>& buf)
 {
 #ifdef WRITE_PASSES
 	constexpr auto WriteComp = 1;
 
+	auto in_line = buf.data() + buffer_offset + buffer_pitch;
+
+	std::vector<uint8_t> out_buf(image_width * image_height);
+	auto out = out_buf.data();
+
+	for (auto y = 0; y < image_height; ++y) {
+		auto in = in_line;
+
+		for (auto x = 0; x < image_width / 8; ++x) {
+			auto p = *in;
+
+			for (auto n = 0; n < 8; ++n) {
+				*out = (p & 1) ? 0xff : 0;
+				++out;
+				p >>= 1;
+			}
+			++in;
+		}
+		in_line += buffer_pitch;
+	}
+
 	stbi_write_png(filename,
 	               image_width,
 	               image_height,
 	               WriteComp,
-	               buf.data() + buffer_offset + buffer_pitch,
-	               buffer_pitch);
+	               out_buf.data(),
+	               image_width);
 #endif
 }
 
@@ -322,8 +319,11 @@ int main(int argc, char* argv[])
 		exit(EXIT_FAILURE);
 	}
 
-	const auto bufsize = (image_width + 2) * (image_height + 2);
-	buffer_pitch       = image_width + 2;
+	assert(image_width % 8 == 0);
+
+	// We store eight 1-bit pixels per byte
+	const auto bufsize = (image_width / 8 + 2) * (image_height + 2);
+	buffer_pitch       = image_width / 8 + 2;
 
 	// Fill buffers with zeroes
 	std::vector<uint8_t> buffer1(bufsize, 0);
@@ -352,14 +352,14 @@ int main(int argc, char* argv[])
 		threshold(input_image, buffer1);
 
 		// 40 us
-		threshold_8(input_image, buffer1);
+		threshold(input_image, buffer1);
 
-		write_buffer("threshold.png", buffer1);
+//		write_buffer("threshold.png", buffer1);
 
 		// buffer 1 now contains the mask for the original image
 		// (off for black pixels, on for non-black pixels)
 #endif
-#if 1
+#if 0
 		// 86 us
 		// downshift_and_xor(buffer1, buffer2);
 
@@ -368,7 +368,7 @@ int main(int argc, char* argv[])
 
 		write_buffer("downshift_and_xor.png", buffer2);
 #endif
-#if 1
+#if 0
 		for (auto i = 0; i < 2; ++i) {
 			// 107 us
 			erode_horiz(buffer2, buffer3);
@@ -384,7 +384,7 @@ int main(int argc, char* argv[])
 
 		write_buffer("erode.png", buffer2);
 #endif
-#if 1
+#if 0
 		for (auto i = 0; i < 2; ++i) {
 			// 107 us
 			dilate_horiz(buffer2, buffer3);
@@ -402,7 +402,7 @@ int main(int argc, char* argv[])
 
 		// buffer 2 now contains the mask for the interlaced FMV area
 #endif
-#if 1
+#if 0
 		// 95 us
 		deinterlace(input_image, buffer2, output_image);
 #endif
