@@ -82,7 +82,7 @@ void threshold(std::vector<uint32_t>& src, std::vector<uint8_t>& dest)
 
 void downshift_and_xor(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 {
-	// Copy src into dest as a starting point
+	// Copy src into dest as a starting point (less than 1 us)
 	dest = src;
 
 	auto in_line = src.data() + buffer_offset + buffer_pitch;
@@ -94,32 +94,7 @@ void downshift_and_xor(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 		auto in  = in_line;
 		auto out = out_line;
 
-		for (auto x = 0; x < image_width; ++x) {
-			*out ^= *in;
-			++in;
-			++out;
-		}
-
-		in_line += buffer_pitch;
-		out_line += buffer_pitch;
-	}
-}
-
-void downshift_and_xor_8(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
-{
-	// Copy src into dest as a starting point
-	dest = src;
-
-	auto in_line = src.data() + buffer_offset + buffer_pitch;
-
-	// Start writing from the second row
-	auto out_line = dest.data() + buffer_offset + buffer_pitch * 2;
-
-	for (auto y = 0; y < (image_height - 1); ++y) {
-		auto in  = in_line;
-		auto out = out_line;
-
-		for (auto x = 0; x < image_width / 8; ++x) {
+		for (auto x = 0; x < image_width / (8 * 8); ++x) {
 			*((uint64_t*)out) ^= *(uint64_t*)in;
 			in += 8;
 			out += 8;
@@ -356,21 +331,18 @@ int main(int argc, char* argv[])
 		auto start = std::chrono::high_resolution_clock::now();
 #if 1
 		// 33 us
-		threshold(input_image, buffer1);
+//		threshold(input_image, buffer1);
 
 //		write_buffer("threshold.png", buffer1);
 
 		// buffer 1 now contains the mask for the original image
 		// (off for black pixels, on for non-black pixels)
 #endif
-#if 0
-		// 86 us
-		// downshift_and_xor(buffer1, buffer2);
+#if 1
+		// 1.51 us
+		downshift_and_xor(buffer1, buffer2);
 
-		// 12 us (uint32_t was 30 us)
-		downshift_and_xor_8(buffer1, buffer2);
-
-		write_buffer("downshift_and_xor.png", buffer2);
+//		write_buffer("downshift_and_xor.png", buffer2);
 #endif
 #if 0
 		for (auto i = 0; i < 2; ++i) {
