@@ -137,11 +137,6 @@ void dilate_horiz(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 
 void dilate_vert(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 {
-	dilate(src, dest, buffer_pitch);
-}
-
-void dilate_vert_8(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
-{
 	auto in_line  = src.data() + buffer_offset + buffer_pitch;
 	auto out_line = dest.data() + buffer_offset + buffer_pitch;
 
@@ -149,7 +144,7 @@ void dilate_vert_8(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 		auto in  = in_line;
 		auto out = out_line;
 
-		for (auto x = 0; x < image_width / 8; ++x) {
+		for (auto x = 0; x < image_width / (8 * 8); ++x) {
 			const auto prev = *((uint64_t*)(in - buffer_pitch));
 			const auto curr = *((uint64_t*)in);
 			const auto next = *((uint64_t*)(in + buffer_pitch));
