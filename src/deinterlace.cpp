@@ -44,7 +44,7 @@ bool load_image(const char* filename)
 	return true;
 }
 
-void threshold(std::vector<uint32_t>& src, std::vector<uint8_t>& dest)
+void threshold_8(std::vector<uint32_t>& src, std::vector<uint8_t>& dest)
 {
 	auto in       = src.data();
 	auto out_line = dest.data() + buffer_offset + buffer_pitch;
@@ -98,32 +98,7 @@ void downshift_and_xor(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 	}
 }
 
-void downshift_and_xor_4(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
-{
-	// Copy src into dest as a starting point
-	dest = src;
-
-	auto in_line = src.data() + buffer_offset + buffer_pitch;
-
-	// Start writing from the second row
-	auto out_line = dest.data() + buffer_offset + buffer_pitch * 2;
-
-	for (auto y = 0; y < (image_height - 1); ++y) {
-		auto in  = in_line;
-		auto out = out_line;
-
-		for (auto x = 0; x < image_width / 8; ++x) {
-			*((uint64_t*)out) ^= *(uint64_t*)in;
-			in += 8;
-			out += 8;
-		}
-
-		in_line += buffer_pitch;
-		out_line += buffer_pitch;
-	}
-}
-
-void downshift_and_xor_4_bit(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
+void downshift_and_xor_8(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 {
 	// Copy src into dest as a starting point
 	dest = src;
@@ -180,6 +155,11 @@ void dilate_horiz(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 
 void dilate_vert(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 {
+	dilate(src, dest, buffer_pitch);
+}
+
+void dilate_vert_8(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
+{
 	auto in_line  = src.data() + buffer_offset + buffer_pitch;
 	auto out_line = dest.data() + buffer_offset + buffer_pitch;
 
@@ -228,37 +208,17 @@ void erode(std::vector<uint8_t>& src, std::vector<uint8_t>& dest, int neighbour_
 	}
 }
 
-void erode_bit(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
-{
-	auto in_line  = src.data() + buffer_offset + buffer_pitch;
-	auto out_line = dest.data() + buffer_offset + buffer_pitch;
-
-	for (auto y = 0; y < image_height; ++y) {
-		auto in  = in_line;
-		auto out = out_line;
-
-		for (auto x = 0; x < image_width / 8 / 8; ++x) {
-			const auto prev = *(in - 1);
-			const auto curr = *in;
-			const auto next = *(in + 1);
-
-			*out = prev & curr & next;
-
-			++in;
-			++out;
-		}
-
-		in_line += buffer_pitch / 8;
-		out_line += buffer_pitch / 8;
-	}
-}
-
 void erode_horiz(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 {
 	erode(src, dest, 1);
 }
 
-void erode_vert(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
+void erode_horiz(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
+{
+	erode(src, dest, buffer_pitch);
+}
+
+void erode_vert_8(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 {
 	auto in_line  = src.data() + buffer_offset + buffer_pitch;
 	auto out_line = dest.data() + buffer_offset + buffer_pitch;
@@ -280,31 +240,6 @@ void erode_vert(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 
 		in_line += buffer_pitch;
 		out_line += buffer_pitch;
-	}
-}
-
-void erode_vert_bit(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
-{
-	auto in_line  = src.data() + buffer_offset + buffer_pitch;
-	auto out_line = dest.data() + buffer_offset + buffer_pitch;
-
-	for (auto y = 0; y < image_height; ++y) {
-		auto in  = in_line;
-		auto out = out_line;
-
-		for (auto x = 0; x < image_width / 8 / 8; ++x) {
-			const auto prev = *((uint64_t*)(in - buffer_pitch));
-			const auto curr = *((uint64_t*)in);
-			const auto next = *((uint64_t*)(in + buffer_pitch));
-
-			*((uint64_t*)out) = prev & curr & next;
-
-			in += 8;
-			out += 8;
-		}
-
-		in_line += buffer_pitch / 8;
-		out_line += buffer_pitch / 8;
 	}
 }
 
@@ -334,7 +269,7 @@ void deinterlace(std::vector<uint32_t>& src, std::vector<uint8_t>& mask,
 	}
 }
 
-#define WRITE_PASSES
+//#define WRITE_PASSES
 
 void write_buffer(const char* filename, std::vector<uint8_t>& buf)
 {
@@ -393,49 +328,56 @@ int main(int argc, char* argv[])
 		// uint64_t  40 us
 		// 33 us
 		threshold(input_image, buffer1);
+
+		// 40 us
+		threshold_8(input_image, buffer1);
+
 		write_buffer("threshold.png", buffer1);
 
 		// buffer 1 now contains the mask for the original image
 		// (off for black pixels, on for non-black pixels)
 #endif
-#if 1
-		// uint84_ = 86 us
-		// uint32_t = 30 us
-		//	downshift_and_xor(buffer1, buffer2);
-		// uint64_t = 12 us
-//		downshift_and_xor_4(buffer1, buffer2);
-		downshift_and_xor_4_bit(buffer1, buffer2);
+#if 0
+		// 86 us
+		//downshift_and_xor(buffer1, buffer2);
+	
+		// 12 us (uint32_t was 30 us)
+//		downshift_and_xor_8(buffer1, buffer2);
+
 		write_buffer("downshift_and_xor.png", buffer2);
 #endif
-#if 1
-		// total 415 us
+#if 0
 		for (auto i = 0; i < 2; ++i) {
 			// 105 us
 			erode_horiz(buffer2, buffer3);
-//			erode_bit(buffer2, buffer3);
 
-			// uint8_t  105 us
-			// uint64_t  10 us
+			// 105 us
 			erode_vert(buffer3, buffer2);
-//			erode_vert_bit(buffer3, buffer2);
+
+			// 10 us
+			erode_vert_8(buffer3, buffer2);
 		}
+
 		write_buffer("erode.png", buffer2);
 #endif
-#if 1
-		// total 418 us
+#if 0
 		for (auto i = 0; i < 2; ++i) {
 			// 105 us
 			dilate_horiz(buffer2, buffer3);
 
-			// uint8_t  103 us
-			// uint64_t   6 us
-			dilate_vert(buffer3, buffer2);
+			// 103 us
+			dilate_vert_8(buffer3, buffer2);
+
+			// 6 us
+			dilate_vert_8(buffer3, buffer2);
 		}
+
 		write_buffer("dilate.png", buffer2);
 
 		// buffer 2 now contains the mask for the interlaced FMV area
 #endif
-#if 1
+#if 0
+		// 94 us
 		deinterlace(input_image, buffer2, output_image);
 #endif
 
@@ -444,7 +386,7 @@ int main(int argc, char* argv[])
 
 		durations_ns.emplace_back(nanoseconds);
 
-#if 1
+#if 0
 		constexpr auto WriteComp = 4;
 
 		stbi_write_png("output.png",
@@ -458,16 +400,14 @@ int main(int argc, char* argv[])
 
 	// TOTAL 1050 us
 	//
-	// after downshift_and_xor_4
+	// after downshift_and_xor_8
 	//   978 us
 	//
-	// after uin64_t erode_vert & dilate_vert
+	// after uin64_t erode_vert_8 & dilate_vert_8
 	//   569 us
 	//
-	// after threshold uin64_t
+	// after threshold_8
 	//   528 us
-	//
-	// bit ops 57 us
 
 	
 	double average_ns = 0;
