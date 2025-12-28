@@ -52,20 +52,28 @@ void threshold(std::vector<uint32_t>& src, std::vector<uint8_t>& dest)
 	for (auto y = 0; y < image_height; ++y) {
 		auto out = out_line;
 
-		for (auto x = 0; x < image_width / 8; ++x) {
-			uint8_t m = 0;
+		for (auto x = 0; x < image_width / (8 * 8); ++x) {
+			uint64_t out_buf = 0;
 
-			for (auto n = 0; n < 8; ++n) {
-				// Make sure the alpha channel is set to zero
-				const auto a1 = *in & 0x00ffffff;
-				++in;
+			for (auto buf_pos = 0; buf_pos < 8; ++buf_pos) {
+				uint8_t m = 0;
+				out_buf >>= 8;
 
-				// Non-black pixels are set to 1 in the bit mask
-				m |= (a1 > 0) << n;
+				for (auto n = 0; n < 8; ++n) {
+					// Make sure the alpha component is set
+					// to zero
+					const auto a = *in & 0x00ffffff;
+					++in;
+
+					// Non-black pixels are set to 1 in the
+					// bit mask
+					m |= (a > 0) ? (1 << n) : 0;
+				}
+				out_buf |= ((uint64_t)m) << 56;
 			}
 
-			*out = m;
-			++out;
+			*((uint64_t*)out) = out_buf;
+			out += 8;
 		}
 
 		out_line += buffer_pitch;
@@ -347,11 +355,7 @@ int main(int argc, char* argv[])
 
 		auto start = std::chrono::high_resolution_clock::now();
 #if 1
-		// 78 us
-		// threshold(input_image, buffer1);
-		threshold(input_image, buffer1);
-
-		// 40 us
+		// 33 us
 		threshold(input_image, buffer1);
 
 //		write_buffer("threshold.png", buffer1);
