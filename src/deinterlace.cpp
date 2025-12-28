@@ -334,8 +334,11 @@ void deinterlace(std::vector<uint32_t>& src, std::vector<uint8_t>& mask,
 	}
 }
 
+#define WRITE_PASSES
+
 void write_buffer(const char* filename, std::vector<uint8_t>& buf)
 {
+#ifdef WRITE_PASSES
 	constexpr auto WriteComp = 1;
 
 	stbi_write_png(filename,
@@ -344,6 +347,7 @@ void write_buffer(const char* filename, std::vector<uint8_t>& buf)
 	               WriteComp,
 	               buf.data() + buffer_offset + buffer_pitch,
 	               buffer_pitch);
+#endif
 }
 
 int main(int argc, char* argv[])
@@ -375,7 +379,7 @@ int main(int argc, char* argv[])
 	constexpr auto NumIterations = 1;
 //	constexpr auto NumIterations = 10000;
 	for (auto it = 0; it < NumIterations; ++it) {
-
+#if 1
 		// 80 us
 		// uint64_t  40 us
 		threshold(input_image, buffer1);
@@ -383,16 +387,17 @@ int main(int argc, char* argv[])
 
 		// buffer 1 now contains the mask for the original image
 		// (off for black pixels, on for non-black pixels)
-
+#endif
+#if 1
 		// uint84_ = 86 us
 		// uint32_t = 30 us
 		//	downshift_and_xor(buffer1, buffer2);
-	
 		// uint64_t = 12 us
 //		downshift_and_xor_4(buffer1, buffer2);
 		downshift_and_xor_4_bit(buffer1, buffer2);
 		write_buffer("downshift_and_xor.png", buffer2);
-
+#endif
+#if 1
 		// total 415 us
 		for (auto i = 0; i < 2; ++i) {
 			// 105 us
@@ -405,7 +410,8 @@ int main(int argc, char* argv[])
 //			erode_vert_bit(buffer3, buffer2);
 		}
 		write_buffer("erode.png", buffer2);
-
+#endif
+#if 1
 		// total 418 us
 		for (auto i = 0; i < 2; ++i) {
 			// 105 us
@@ -418,9 +424,11 @@ int main(int argc, char* argv[])
 		write_buffer("dilate.png", buffer2);
 
 		// buffer 2 now contains the mask for the interlaced FMV area
-
+#endif
+#if 1
 		deinterlace(input_image, buffer2, output_image);
-
+#endif
+#if 1
 		constexpr auto WriteComp = 4;
 
 		stbi_write_png("output.png",
@@ -429,6 +437,7 @@ int main(int argc, char* argv[])
 		               WriteComp,
 		               output_image.data(),
 		               image_width * WriteComp);
+#endif
 	}
 
 	// TOTAL 1050 us
