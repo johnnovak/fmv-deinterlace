@@ -101,34 +101,52 @@ void downshift_and_xor(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
 	}
 }
 
-void dilate(std::vector<uint64_t>& src, std::vector<uint64_t>& dest, int neighbour_offset)
+void dilate_horiz(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
 {
-	auto in_line  = src.data() + buffer_offset + buffer_pitch;
-	auto out_line = dest.data() + buffer_offset + buffer_pitch;
+	auto in_line  = src.data() + buffer_pitch;
+	auto out_line = dest.data() + buffer_pitch;
 
 	for (auto y = 0; y < image_height; ++y) {
 		auto in  = in_line;
 		auto out = out_line;
 
-		for (auto x = 0; x < image_width; ++x) {
-			const auto prev = *(in - neighbour_offset);
-			const auto curr = *in;
-			const auto next = *(in + neighbour_offset);
+		// We process the input horizontally in 64-pixel chunks.
+		// This is the layout of a single chunk in an uint64_t:
+		//
+		//    bits         pixels
+		//
+		//    0-7    pixels N    to N+7
+		//    8-15   pixels N+8  to N+15
+		//   16-23   pixels N+16 to N+23
+		//    ...            ...
+		//   48-55   pixels N+48 to N+55
+		//   56-63   pixels N+56 to N+63
+		//
+		uint64_t curr = *in++;
+		uint64_t prev = 0;
 
-			*out = prev | curr | next;
-
+		for (auto x = 0; x < image_width / (8 * 8) + 1; ++x) {
+			const auto next = *in;
 			++in;
+
+			// "Shift in" the last pixel of the previous chunk
+			const auto prev_pixel63 = (prev & ((uint64_t)1 << 63)) >> 63;
+			const auto left_neighbours = (curr << 1) | prev_pixel63;
+
+			// "Shift in" the firs pixel of the next chunk
+			const auto next_pixel1      = (next & 1) << 63;
+			const auto right_neighbours = next_pixel1 | curr >> 1;
+
+			*out = left_neighbours | curr | right_neighbours;
 			++out;
+
+			prev = curr;
+			curr = next;
 		}
 
 		in_line += buffer_pitch;
 		out_line += buffer_pitch;
 	}
-}
-
-void dilate_horiz(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
-{
-	dilate(src, dest, 1);
 }
 
 void dilate_vert(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
@@ -350,27 +368,29 @@ int main(int argc, char* argv[])
 
 		write_buffer("downshift_and_xor.png", buffer2);
 #endif
-#if 1
-//		for (auto i = 0; i < 2; ++i) {
+#if 0
+		for (auto i = 0; i < 2; ++i) {
 			// 1.92 us
 			erode_horiz(buffer2, buffer3);
 
 			// 1.44 us
-//			erode_vert(buffer3, buffer2);
-//		}
+			erode_vert(buffer3, buffer2);
+		}
+		// total 5.60 us
 
 //		write_buffer("erode.png", buffer2);
 #endif
-#if 0
+#if 1
 		for (auto i = 0; i < 2; ++i) {
-			// 107 us
+			// 1.92 us
 			dilate_horiz(buffer2, buffer3);
 
 			// 1.45 us
 			dilate_vert(buffer3, buffer2);
 		}
+		// total 5.60 us
 
-		write_buffer("dilate.png", buffer2);
+//		write_buffer("dilate.png", buffer2);
 
 		// buffer 2 now contains the mask for the interlaced FMV area
 #endif
