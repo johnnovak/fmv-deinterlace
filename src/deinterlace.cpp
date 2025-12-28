@@ -44,6 +44,29 @@ bool load_image(const char* filename)
 	return true;
 }
 
+void threshold(std::vector<uint32_t>& src, std::vector<uint8_t>& dest)
+{
+	auto in       = src.data();
+	auto out_line = dest.data() + buffer_offset + buffer_pitch;
+
+	for (auto y = 0; y < image_height; ++y) {
+		auto out = out_line;
+
+		for (auto x = 0; x < image_width; ++x) {
+			// Make sure alpha channel is set to zero
+			auto a = *in & 0x00ffffff;
+
+			// Create a mask where all non-black pixels are 0xff
+			*out = (a > 0) ? 0xff : 0;
+
+			++in;
+			++out;
+		}
+
+		out_line += buffer_pitch;
+	}
+}
+
 void threshold_8(std::vector<uint32_t>& src, std::vector<uint8_t>& dest)
 {
 	auto in       = src.data();
@@ -62,7 +85,7 @@ void threshold_8(std::vector<uint32_t>& src, std::vector<uint8_t>& dest)
 				++in;
 
 				// Create a mask where all non-black pixels are 0xff
-				out_buf |= (a > 0) ? 0xff00000000000000 : 0;
+				out_buf |= (a > 0) ? (static_cast<uint64_t>(0xff) << 56) : 0;
 			}
 
 			*((uint64_t*)out) = out_buf;
@@ -213,7 +236,7 @@ void erode_horiz(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 	erode(src, dest, 1);
 }
 
-void erode_horiz(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
+void erode_vert(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 {
 	erode(src, dest, buffer_pitch);
 }
@@ -324,9 +347,8 @@ int main(int argc, char* argv[])
 
 		auto start = std::chrono::high_resolution_clock::now();
 #if 1
-		// 80 us
-		// uint64_t  40 us
-		// 33 us
+		// 78 us
+		// threshold(input_image, buffer1);
 		threshold(input_image, buffer1);
 
 		// 40 us
@@ -337,47 +359,51 @@ int main(int argc, char* argv[])
 		// buffer 1 now contains the mask for the original image
 		// (off for black pixels, on for non-black pixels)
 #endif
-#if 0
+#if 1
 		// 86 us
-		//downshift_and_xor(buffer1, buffer2);
-	
+		// downshift_and_xor(buffer1, buffer2);
+
 		// 12 us (uint32_t was 30 us)
-//		downshift_and_xor_8(buffer1, buffer2);
+		downshift_and_xor_8(buffer1, buffer2);
 
 		write_buffer("downshift_and_xor.png", buffer2);
 #endif
-#if 0
+#if 1
 		for (auto i = 0; i < 2; ++i) {
-			// 105 us
+			// 107 us
 			erode_horiz(buffer2, buffer3);
 
 			// 105 us
-			erode_vert(buffer3, buffer2);
+			// erode_vert(buffer3, buffer2);
 
-			// 10 us
+			// 7 us
 			erode_vert_8(buffer3, buffer2);
 		}
+		// total (erode_vert)    418 us
+		// total (erode_vert_8)  220 us
 
 		write_buffer("erode.png", buffer2);
 #endif
-#if 0
+#if 1
 		for (auto i = 0; i < 2; ++i) {
-			// 105 us
+			// 107 us
 			dilate_horiz(buffer2, buffer3);
 
-			// 103 us
-			dilate_vert_8(buffer3, buffer2);
+			// 105 us
+			// dilate_vert(buffer3, buffer2);
 
-			// 6 us
+			// 7 us
 			dilate_vert_8(buffer3, buffer2);
 		}
+		// total (dilate_vert)    420 us
+		// total (dilate_vert_8)  220 us
 
 		write_buffer("dilate.png", buffer2);
 
 		// buffer 2 now contains the mask for the interlaced FMV area
 #endif
-#if 0
-		// 94 us
+#if 1
+		// 95 us
 		deinterlace(input_image, buffer2, output_image);
 #endif
 
@@ -386,7 +412,7 @@ int main(int argc, char* argv[])
 
 		durations_ns.emplace_back(nanoseconds);
 
-#if 0
+#if 1
 		constexpr auto WriteComp = 4;
 
 		stbi_write_png("output.png",
@@ -398,16 +424,20 @@ int main(int argc, char* argv[])
 #endif
 	}
 
-	// TOTAL 1050 us
+	// Benchmark results
+	// -----------------
+	// 10k iterations, averaged
+	// 640x480 input image
 	//
-	// after downshift_and_xor_8
-	//   978 us
 	//
-	// after uin64_t erode_vert_8 & dilate_vert_8
-	//   569 us
+	// 2024 MacMini, Apple M4
 	//
-	// after threshold_8
-	//   528 us
+	//   uint8_t masks
+	//       first implementation  1117 us
+	//       threshold_8           1084 us
+	//       downshift_and_xor_8   1058 us
+	//       erode_vert_8           806 us
+	//       dilate_vert_8          605 us
 
 	
 	double average_ns = 0;
