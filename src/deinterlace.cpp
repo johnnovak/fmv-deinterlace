@@ -259,13 +259,18 @@ void deinterlace(std::vector<uint32_t>& src, std::vector<uint64_t>& mask,
 	for (auto y = 0; y < (image_height - 1); ++y) {
 		auto mask = mask_line;
 
-		for (auto x = 0; x < image_width; ++x) {
-			if (*mask) {
-				*out |= *in;
+		for (auto x = 0; x < image_width / (8 * 8); ++x) {
+			auto m = *mask;
+
+			for (auto x = 0; x < 64; ++x) {
+				if (m & 1) {
+					*out |= *in;
+				}
+				m >>= 1;
+				++out;
+				++in;
 			}
 
-			++out;
-			++in;
 			++mask;
 		}
 
@@ -273,7 +278,7 @@ void deinterlace(std::vector<uint32_t>& src, std::vector<uint64_t>& mask,
 	}
 }
 
-#define WRITE_PASSES
+//#define WRITE_PASSES
 
 void write_buffer(const char* filename, std::vector<uint64_t>& buf)
 {
@@ -353,7 +358,7 @@ int main(int argc, char* argv[])
 		}
 
 		auto start = std::chrono::high_resolution_clock::now();
-#if 0
+#if 1
 		// 33 us
 		threshold(input_image, buffer1);
 
@@ -362,13 +367,13 @@ int main(int argc, char* argv[])
 		// buffer 1 now contains the mask for the original image
 		// (off for black pixels, on for non-black pixels)
 #endif
-#if 0
+#if 1
 		// 1.51 us
 		downshift_and_xor(buffer1, buffer2);
 
 		write_buffer("downshift_and_xor.png", buffer2);
 #endif
-#if 0
+#if 1
 		for (auto i = 0; i < 2; ++i) {
 			// 1.92 us
 			erode_horiz(buffer2, buffer3);
@@ -378,7 +383,7 @@ int main(int argc, char* argv[])
 		}
 		// total 5.60 us
 
-//		write_buffer("erode.png", buffer2);
+		write_buffer("erode.png", buffer2);
 #endif
 #if 1
 		for (auto i = 0; i < 2; ++i) {
@@ -390,11 +395,11 @@ int main(int argc, char* argv[])
 		}
 		// total 5.60 us
 
-//		write_buffer("dilate.png", buffer2);
+		write_buffer("dilate.png", buffer2);
 
 		// buffer 2 now contains the mask for the interlaced FMV area
 #endif
-#if 0
+#if 1
 		// 95 us
 		deinterlace(input_image, buffer2, output_image);
 #endif
@@ -430,6 +435,9 @@ int main(int argc, char* argv[])
 	//       downshift_and_xor_8   1058 us
 	//       erode_vert_8           806 us
 	//       dilate_vert_8          605 us
+	//
+	//  bitfield masks
+	//  	total				    155 us	
 
 	
 	double average_ns = 0;
