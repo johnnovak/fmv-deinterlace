@@ -308,6 +308,32 @@ void erode_vert_bit(std::vector<uint8_t>& src, std::vector<uint8_t>& dest)
 	}
 }
 
+void deinterlace(std::vector<uint32_t>& src, std::vector<uint8_t>& mask,
+                 std::vector<uint32_t>& dest)
+{
+	dest = src;
+
+	auto in        = src.data();
+	auto mask_line = mask.data() + buffer_offset + buffer_pitch * 2;
+	auto out       = dest.data() + image_width;
+
+	for (auto y = 0; y < (image_height - 1); ++y) {
+		auto mask = mask_line;
+
+		for (auto x = 0; x < image_width; ++x) {
+			if (*mask) {
+				*out |= *in;
+			}
+
+			++out;
+			++in;
+			++mask;
+		}
+
+		mask_line += buffer_pitch;
+	}
+}
+
 void write_buffer(const char* filename, std::vector<uint8_t>& buf)
 {
 	constexpr auto WriteComp = 1;
@@ -341,6 +367,8 @@ int main(int argc, char* argv[])
 	std::vector<uint8_t> buffer1(bufsize, 0);
 	std::vector<uint8_t> buffer2(bufsize, 0);
 	std::vector<uint8_t> buffer3(bufsize, 0);
+
+	std::vector<uint32_t> output_image(input_image.size());
 
 	auto start = std::chrono::high_resolution_clock::now();
 
@@ -390,6 +418,17 @@ int main(int argc, char* argv[])
 		write_buffer("dilate.png", buffer2);
 
 		// buffer 2 now contains the mask for the interlaced FMV area
+
+		deinterlace(input_image, buffer2, output_image);
+
+		constexpr auto WriteComp = 4;
+
+		stbi_write_png("output.png",
+		               image_width,
+		               image_height,
+		               WriteComp,
+		               output_image.data(),
+		               image_width * WriteComp);
 	}
 
 	// TOTAL 1050 us
