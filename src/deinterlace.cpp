@@ -19,7 +19,7 @@ std::vector<uint32_t> input_image;
 int buffer_pitch;
 
 // Number of uint64_t's before the start of the actual image data in each row
-int buffer_offset = 1;
+int buffer_offset = 2;
 
 bool load_image(const char* filename)
 {
@@ -52,7 +52,7 @@ void threshold(std::vector<uint32_t>& src, std::vector<uint64_t>& dest)
 	for (auto y = 0; y < image_height; ++y) {
 		auto out = out_line;
 
-		for (auto x = 0; x < image_width / (8 * 8); ++x) {
+		for (auto x = 0; x < image_width / 64; ++x) {
 			uint64_t out_buf = 0;
 
 			for (auto n = 0; n < 64; ++n) {
@@ -90,7 +90,7 @@ void downshift_and_xor(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
 		auto in  = in_line;
 		auto out = out_line;
 
-		for (auto x = 0; x < image_width / (8 * 8); ++x) {
+		for (auto x = 0; x < image_width / 64; ++x) {
 			*out ^= *in;
 			++in;
 			++out;
@@ -103,8 +103,8 @@ void downshift_and_xor(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
 
 void dilate_horiz(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
 {
-	auto in_line  = src.data() + buffer_pitch;
-	auto out_line = dest.data() + buffer_pitch;
+	auto in_line  = src.data() + buffer_pitch + 1;
+	auto out_line = dest.data() + buffer_pitch + 1;
 
 	for (auto y = 0; y < image_height; ++y) {
 		auto in  = in_line;
@@ -125,7 +125,7 @@ void dilate_horiz(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
 		uint64_t curr = *in++;
 		uint64_t prev = 0;
 
-		for (auto x = 0; x < image_width / (8 * 8) + 1; ++x) {
+		for (auto x = 0; x < image_width / 64 + 1; ++x) {
 			const auto next = *in;
 			++in;
 
@@ -158,7 +158,7 @@ void dilate_vert(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
 		auto in  = in_line;
 		auto out = out_line;
 
-		for (auto x = 0; x < image_width / (8 * 8); ++x) {
+		for (auto x = 0; x < image_width / 64; ++x) {
 			const auto prev = *(in - buffer_pitch);
 			const auto curr = *in;
 			const auto next = *(in + buffer_pitch);
@@ -176,8 +176,8 @@ void dilate_vert(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
 
 void erode_horiz(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
 {
-	auto in_line  = src.data() + buffer_pitch;
-	auto out_line = dest.data() + buffer_pitch;
+	auto in_line  = src.data() + buffer_pitch + 1;
+	auto out_line = dest.data() + buffer_pitch + 1;
 
 	for (auto y = 0; y < image_height; ++y) {
 		auto in  = in_line;
@@ -198,7 +198,7 @@ void erode_horiz(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
 		uint64_t curr = *in++;
 		uint64_t prev = 0;
 
-		for (auto x = 0; x < image_width / (8 * 8) + 1; ++x) {
+		for (auto x = 0; x < image_width / 64 + 1; ++x) {
 			const auto next = *in;
 			++in;
 
@@ -231,7 +231,7 @@ void erode_vert(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
 		auto in  = in_line;
 		auto out = out_line;
 
-		for (auto x = 0; x < image_width / (8 * 8); ++x) {
+		for (auto x = 0; x < image_width / 64; ++x) {
 			const auto prev = *(in - buffer_pitch);
 			const auto curr = *in;
 			const auto next = *(in + buffer_pitch);
@@ -259,7 +259,7 @@ void deinterlace(std::vector<uint32_t>& src, std::vector<uint64_t>& mask,
 	for (auto y = 0; y < (image_height - 1); ++y) {
 		auto mask = mask_line;
 
-		for (auto x = 0; x < image_width / (8 * 8); ++x) {
+		for (auto x = 0; x < image_width / 64; ++x) {
 			auto m = *mask;
 
 			for (auto x = 0; x < 64; ++x) {
@@ -306,7 +306,7 @@ void write_buffer(const char* filename, std::vector<uint64_t>& buf)
 	for (auto y = 0; y < image_height; ++y) {
 		auto in = in_line;
 
-		for (auto x = 0; x < image_width / (8 * 8); ++x) {
+		for (auto x = 0; x < image_width / 64; ++x) {
 			auto in_buf = *in;
 
 			for (auto n = 0; n < 64; ++n) {
@@ -347,8 +347,9 @@ int main(int argc, char* argv[])
 	// We store 64 1-bit pixels per uint64_t, plus 1 uint64_t for padding at
 	// the end of each row. We also store two padding rows at the top and
 	// bottom.
-	const auto bufsize = (image_width / (8 * 8) + 1) * (image_height + 2);
-	buffer_pitch       = image_width / (8 * 8) + 1;
+	const auto bufsize = (image_width / 64 + buffer_offset) * (image_height + 2);
+
+	buffer_pitch = image_width / 64 + buffer_offset;
 
 	// Fill buffers with zeroes
 	std::vector<uint64_t> buffer1(bufsize, 0);
@@ -419,7 +420,7 @@ int main(int argc, char* argv[])
 #endif
 #if 1
 		// 95 us
-		deinterlace(input_image, buffer2, output_image);
+		deinterlace(input_image, buffer3, output_image);
 #endif
 
 		auto end = std::chrono::high_resolution_clock::now();
