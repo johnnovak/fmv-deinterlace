@@ -1,0 +1,8 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "fmv-deinterlace",
+  "description": "FMV deinterlace",
+  "version": "1.0.0",
+  "dependencies": [],
+  "builtin-baseline": "5d4ed75aa3c8b58f7e11891dcc49d9dd777e98fb"
+}
