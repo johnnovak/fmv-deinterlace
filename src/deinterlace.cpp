@@ -374,14 +374,24 @@ int main(int argc, char* argv[])
 
 	std::vector<uint32_t> output_image(input_image.size());
 
-	auto start = std::chrono::high_resolution_clock::now();
+	std::vector<uint64_t> durations_ns;
 
-	constexpr auto NumIterations = 1;
-//	constexpr auto NumIterations = 10000;
+//	constexpr auto NumIterations = 1;
+	constexpr auto NumIterations = 200;
+
+	srand(time(NULL));
+
 	for (auto it = 0; it < NumIterations; ++it) {
+
+		for (auto& x : input_image) {
+			x = rand();
+		}
+
+		auto start = std::chrono::high_resolution_clock::now();
 #if 1
 		// 80 us
 		// uint64_t  40 us
+		// 33 us
 		threshold(input_image, buffer1);
 		write_buffer("threshold.png", buffer1);
 
@@ -428,6 +438,12 @@ int main(int argc, char* argv[])
 #if 1
 		deinterlace(input_image, buffer2, output_image);
 #endif
+
+		auto end = std::chrono::high_resolution_clock::now();
+		uint64_t nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+
+		durations_ns.emplace_back(nanoseconds);
+
 #if 1
 		constexpr auto WriteComp = 4;
 
@@ -453,12 +469,13 @@ int main(int argc, char* argv[])
 	//
 	// bit ops 57 us
 
-	auto end = std::chrono::high_resolution_clock::now();
+	
+	double average_ns = 0;
+	for (const auto t : durations_ns) {
+		average_ns += (double) t;
+	}
+	average_ns /= (double) durations_ns.size();
 
-	long long microseconds = std::chrono::duration_cast<std::chrono::microseconds>(
-	                                 end - start)
-	                                 .count();
-
-	printf("Total time (microseconds): %lld\n", microseconds / NumIterations);
+	printf("Total time: %.2f microseconds\n", average_ns / 1000.0);
 }
 
