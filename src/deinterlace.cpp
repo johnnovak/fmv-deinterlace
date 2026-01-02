@@ -440,25 +440,45 @@ int main(int argc, char* argv[])
 #endif
 	}
 
-	// Benchmark results
-	// -----------------
-	// 10k iterations, averaged
-	// 640x480 input image
-	//
-	//
-	// 2024 MacMini, Apple M4
-	//
-	//   uint8_t masks
-	//       first implementation  1117 us
-	//       threshold_8           1084 us
-	//       downshift_and_xor_8   1058 us
-	//       erode_vert_8           806 us
-	//       dilate_vert_8          605 us
-	//
-	//  bitfield masks
-	//  	total				    155 us	
+    // Benchmark results
+    // =================
+    // 10k iterations, averaged
+    // 640x480 input image
+    //
+    //
+    // 2024 MacMini, Apple M4
+    // ----------------------
+    //   uint8_t masks
+    //       first implementation  1117 us
+    //       threshold_8           1084 us
+    //       downshift_and_xor_8   1058 us
+    //       erode_vert_8           806 us
+    //       dilate_vert_8          605 us
+    //
+    //  bitfield masks
+    //       total                  155 us
+    //
+    //
+    // AMD Ryzen 7900
+    // --------------
+    //   uint8_t masks
+    //       first implementation  1454 us
+    //
+    //       threshold_8
+    //       downshift_and_xor_8
+    //       erode_vert_8
+    //       dilate_vert_8          753 us
+    //
+    //  bitfield masks
+    //       erode_horiz              5 us
+    //       erode_vert             1.6 us
+    //       dilate_horiz             5 us
+    //       dilate_vert            1.6 us
+    //       deinterlace             97 us
+    //
+    //       total                  220 us
+    //
 
-	
 	double average_ns = 0;
 	for (const auto t : durations_ns) {
 		average_ns += (double) t;
