@@ -61,11 +61,12 @@ void threshold(std::vector<uint32_t>& src, std::vector<uint64_t>& dest)
 				const auto a = *in & 0x00ffffff;
 				++in;
 
-				// Non-black pixels are set to 1 in the bit mask.
-				// We convert the pixels by row, top to down, left
-				// to right. When converting the first 64 pixels
-				// of a row, the LSB of the mask uint64_t is the
-				// first pixel, and the MSB is the 64th pixel.
+				// Non-black pixels are set to 1 in the bit
+				// mask. We convert the pixels by row, top to
+				// down, left to right. When converting the
+				// first 64 pixels of a row, the LSB of the mask
+				// uint64_t is the first pixel, and the MSB is
+				// the 64th pixel.
 				out_buf |= (a > 0) ? ((uint64_t)1 << n) : 0;
 			}
 			*out = out_buf;
@@ -291,7 +292,7 @@ void deinterlace(std::vector<uint32_t>& src, std::vector<uint64_t>& mask,
 	}
 }
 
-//#define WRITE_PASSES
+// #define WRITE_PASSES
 
 void write_buffer(const char* filename, std::vector<uint64_t>& buf)
 {
@@ -440,50 +441,50 @@ int main(int argc, char* argv[])
 #endif
 	}
 
-    // Benchmark results
-    // =================
-    // 10k iterations, averaged
-    // 640x480 input image
-    //
-    //
-    // 2024 MacMini, Apple M4
-    // ----------------------
-    //   uint8_t masks
-    //       first implementation  1117 us
-    //       threshold_8           1084 us
-    //       downshift_and_xor_8   1058 us
-    //       erode_vert_8           806 us
-    //       dilate_vert_8          605 us
-    //
-    //  bitfield masks
-    //       total                  155 us
-    //
-    //
-    // AMD Ryzen 7900
-    // --------------
-    //   uint8_t masks
-    //       first implementation  1454 us
-    //
-    //       threshold_8
-    //       downshift_and_xor_8
-    //       erode_vert_8
-    //       dilate_vert_8          753 us
-    //
-    //  bitfield masks
-    //       erode_horiz              5 us
-    //       erode_vert             1.6 us
-    //       dilate_horiz             5 us
-    //       dilate_vert            1.6 us
-    //       deinterlace             97 us
-    //
-    //       total                  220 us
-    //
+	// Benchmark results
+	// =================
+	// 10k iterations, averaged
+	// 640x480 input image
+	//
+	//
+	// 2024 MacMini, Apple M4
+	// ----------------------
+	//   uint8_t masks
+	//       first implementation  1117 us
+	//       threshold_8           1084 us
+	//       downshift_and_xor_8   1058 us
+	//       erode_vert_8           806 us
+	//       dilate_vert_8          605 us
+	//
+	//  bitfield masks
+	//       total                  155 us
+	//
+	//
+	// AMD Ryzen 7900
+	// --------------
+	//   uint8_t masks
+	//       first implementation  1454 us
+	//
+	//       threshold_8
+	//       downshift_and_xor_8
+	//       erode_vert_8
+	//       dilate_vert_8          753 us
+	//
+	//  bitfield masks
+	//       erode_horiz              5 us
+	//       erode_vert             1.6 us
+	//       dilate_horiz             5 us
+	//       dilate_vert            1.6 us
+	//       deinterlace             97 us
+	//
+	//       total                  220 us
+	//
 
 	double average_ns = 0;
 	for (const auto t : durations_ns) {
-		average_ns += (double) t;
+		average_ns += (double)t;
 	}
-	average_ns /= (double) durations_ns.size();
+	average_ns /= (double)durations_ns.size();
 
 	printf("Total time: %.2f microseconds\n", average_ns / 1000.0);
 }
