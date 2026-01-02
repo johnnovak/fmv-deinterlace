@@ -292,7 +292,7 @@ void deinterlace(std::vector<uint32_t>& src, std::vector<uint64_t>& mask,
 	}
 }
 
-// #define WRITE_PASSES
+#define WRITE_PASSES
 
 void write_buffer(const char* filename, std::vector<uint64_t>& buf)
 {
@@ -421,7 +421,7 @@ int main(int argc, char* argv[])
 #endif
 #if 1
 		// 95 us
-		deinterlace(input_image, buffer3, output_image);
+		deinterlace(input_image, buffer2, output_image);
 #endif
 
 		auto end = std::chrono::high_resolution_clock::now();

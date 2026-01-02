@@ -9,9 +9,7 @@
       "binaryDir": "${sourceDir}/build/debug",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_FIND_PACKAGE_PREFER_CONFIG" : "ON",
-        "CMAKE_BUILD_TYPE": "Debug",
-        "RESOURCE_COPY_PATH": "/../resources"
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
@@ -22,59 +20,29 @@
       "binaryDir": "${sourceDir}/build/release",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_FIND_PACKAGE_PREFER_CONFIG" : "ON",
-        "CMAKE_BUILD_TYPE": "Release",
-        "RESOURCE_COPY_PATH": "/../resources"
+        "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
       "name": "debug-linux",
-      "displayName": "Debug (Linux host CPU), using system libs",
+      "displayName": "Debug",
       "description": "Configure for Debug build",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/debug-linux",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "RESOURCE_COPY_PATH": "/resources",
-        "USE_SYSTEM_LIBS": "ON"
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
       "name": "release-linux",
-      "displayName": "Release (Linux host CPU), using system libs",
-      "description": "Configure for Release build",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/release-linux",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Release",
-        "RESOURCE_COPY_PATH": "/resources",
-        "USE_SYSTEM_LIBS": "ON"
-      }
-    },
-    {
-      "name": "debug-linux-vcpkg",
-      "displayName": "Debug (Linux host CPU), using vcpkg",
-      "description": "Configure for Debug build",
-      "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/debug-linux",
-      "cacheVariables": {
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_FIND_PACKAGE_PREFER_CONFIG" : "ON",
-        "CMAKE_BUILD_TYPE": "Debug",
-        "RESOURCE_COPY_PATH": "/resources"
-      }
-    },
-    {
-      "name": "release-linux-vcpkg",
-      "displayName": "Release (Linux host CPU), using vcpkg",
+      "displayName": "Release",
       "description": "Configure for Release build",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/release-linux",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_FIND_PACKAGE_PREFER_CONFIG" : "ON",
-        "CMAKE_BUILD_TYPE": "Release",
-        "RESOURCE_COPY_PATH": "/resources"
+        "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
@@ -85,9 +53,7 @@
       "binaryDir": "${sourceDir}/build/debug-macos",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_FIND_PACKAGE_PREFER_CONFIG" : "ON",
-        "CMAKE_BUILD_TYPE": "Debug",
-        "RESOURCE_COPY_PATH": "/Resources"
+        "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
@@ -98,37 +64,7 @@
       "binaryDir": "${sourceDir}/build/release-macos",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_FIND_PACKAGE_PREFER_CONFIG" : "ON",
-        "CMAKE_BUILD_TYPE": "Release",
-        "RESOURCE_COPY_PATH": "/Resources"
-      }
-    },
-    {
-      "name": "release-macos-arm64",
-      "displayName": "Release (macOS arm64)",
-      "description": "Configure for Release build",
-      "generator": "Xcode",
-      "binaryDir": "${sourceDir}/build/release-macos-arm64",
-      "cacheVariables": {
-        "CMAKE_OSX_ARCHITECTURES": "arm64",
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_FIND_PACKAGE_PREFER_CONFIG" : "ON",
-        "CMAKE_BUILD_TYPE": "Release",
-        "RESOURCE_COPY_PATH": "/Resources"
-      }
-    },
-    {
-      "name": "release-macos-x86_64",
-      "displayName": "Release (macOS x86_64)",
-      "description": "Configure for Release build",
-      "generator": "Xcode",
-      "binaryDir": "${sourceDir}/build/release-macos-x86_64",
-      "cacheVariables": {
-        "CMAKE_OSX_ARCHITECTURES": "x86_64",
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_FIND_PACKAGE_PREFER_CONFIG" : "ON",
-        "CMAKE_BUILD_TYPE": "Release",
-        "RESOURCE_COPY_PATH": "/Resources"
+        "CMAKE_BUILD_TYPE": "Release"
       }
     },
     {
@@ -140,9 +76,7 @@
       "cacheVariables": {
         "CMAKE_GENERATOR_TOOLSET": "ClangCL",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_FIND_PACKAGE_PREFER_CONFIG" : "ON",
-        "CMAKE_BUILD_TYPE": "Debug",
-        "RESOURCE_COPY_PATH": "/Resources"
+        "CMAKE_BUILD_TYPE": "Debug"
       },
       "environment": {
         "UseMultiToolTask": "true",
@@ -158,9 +92,7 @@
       "cacheVariables": {
         "CMAKE_GENERATOR_TOOLSET": "ClangCL",
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
-        "CMAKE_FIND_PACKAGE_PREFER_CONFIG" : "ON",
-        "CMAKE_BUILD_TYPE": "Release",
-        "RESOURCE_COPY_PATH": "/Resources"
+        "CMAKE_BUILD_TYPE": "Release"
       },
       "environment": {
         "UseMultiToolTask": "true",
@@ -188,16 +120,6 @@
       "configuration": "Release"
     },
     {
-      "name": "debug-linux-vcpkg",
-      "configurePreset" : "debug-linux",
-      "configuration": "Debug"
-    },
-    {
-      "name": "release-linux-vcpkg",
-      "configurePreset" : "release-linux",
-      "configuration": "Release"
-    },
-    {
       "name": "debug-macos",
       "configurePreset" : "debug-macos",
       "configuration": "Debug",
@@ -210,18 +132,6 @@
       "nativeToolOptions": ["-quiet"]
     },
     {
-      "name": "release-macos-arm64",
-      "configurePreset" : "release-macos-arm64",
-      "configuration": "Release",
-      "nativeToolOptions": ["-quiet"]
-    },
-    {
-      "name": "release-macos-x86_64",
-      "configurePreset" : "release-macos-x86_64",
-      "configuration": "Release",
-      "nativeToolOptions": ["-quiet"]
-    },
-    {
       "name": "debug-windows",
       "configurePreset" : "debug-windows",
       "configuration": "Debug"
@@ -230,102 +140,6 @@
       "name": "release-windows",
       "configurePreset" : "release-windows",
       "configuration": "Release"
-    }
-  ],
-  "testPresets": [
-    {
-      "name": "debug",
-      "configurePreset": "debug",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "release",
-      "configurePreset": "release",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "debug-linux",
-      "configurePreset" : "debug-linux",
-      "configuration": "Debug",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "release-linux",
-      "configurePreset" : "release-linux",
-      "configuration": "Release",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "debug-linux-vcpkg",
-      "configurePreset" : "debug-linux",
-      "configuration": "Debug",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "release-linux-vcpkg",
-      "configurePreset" : "release-linux",
-      "configuration": "Release",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "debug-macos",
-      "configurePreset" : "debug-macos",
-      "configuration": "Debug",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "release-macos",
-      "configurePreset" : "release-macos",
-      "configuration": "Release",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "release-macos-arm64",
-      "configurePreset" : "release-macos-arm64",
-      "configuration": "Release",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "release-macos-x86_64",
-      "configurePreset" : "release-macos-x86_64",
-      "configuration": "Release",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "debug-windows",
-      "configurePreset" : "debug-windows",
-      "configuration": "Debug",
-      "output": {
-        "outputOnFailure": true
-      }
-    },
-    {
-      "name": "release-windows",
-      "configurePreset" : "release-windows",
-      "configuration": "Release",
-      "output": {
-        "outputOnFailure": true
-      }
     }
   ]
 }
