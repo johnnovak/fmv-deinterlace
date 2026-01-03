@@ -382,7 +382,7 @@ int main(int argc, char* argv[])
 		// 33 us
 		threshold(input_image, buffer1);
 
-		write_buffer("threshold.png", buffer1);
+		write_buffer("out/threshold.png", buffer1);
 
 		// buffer 1 now contains the mask for the original image
 		// (off for black pixels, on for non-black pixels)
@@ -391,7 +391,7 @@ int main(int argc, char* argv[])
 		// 1.51 us
 		downshift_and_xor(buffer1, buffer2);
 
-		write_buffer("downshift_and_xor.png", buffer2);
+		write_buffer("out/downshift_and_xor.png", buffer2);
 #endif
 #if 1
 		for (auto i = 0; i < 2; ++i) {
@@ -403,7 +403,7 @@ int main(int argc, char* argv[])
 		}
 		// total 5.60 us
 
-		write_buffer("erode.png", buffer2);
+		write_buffer("out/erode.png", buffer2);
 #endif
 #if 1
 		for (auto i = 0; i < 2; ++i) {
@@ -415,7 +415,7 @@ int main(int argc, char* argv[])
 		}
 		// total 5.60 us
 
-		write_buffer("dilate.png", buffer2);
+		write_buffer("out/dilate.png", buffer2);
 
 		// buffer 2 now contains the mask for the interlaced FMV area
 #endif
@@ -432,7 +432,7 @@ int main(int argc, char* argv[])
 #if 1
 		constexpr auto WriteComp = 4;
 
-		stbi_write_png("output.png",
+		stbi_write_png("out/output.png",
 		               image_width,
 		               image_height,
 		               WriteComp,
