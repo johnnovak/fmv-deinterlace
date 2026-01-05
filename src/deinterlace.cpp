@@ -55,11 +55,22 @@ void threshold(std::vector<uint32_t>& src, std::vector<uint64_t>& dest)
 		for (auto x = 0; x < image_width / 64; ++x) {
 			uint64_t out_buf = 0;
 
-			for (auto n = 0; n < 64; ++n) {
-				// Make sure the alpha component is set
-				// to zero
-				const auto a = *in & 0x00ffffff;
-				++in;
+			// Build the 64-bit mask 8 pixels at a time to reduce
+			// loop overhead.
+			for (auto n = 0; n < 8; ++n) {
+				// Make sure the alpha component is set to zero
+				constexpr auto mask = 0x00ffffff;
+
+				const auto a1 = in[0] & mask;
+				const auto a2 = in[1] & mask;
+				const auto a3 = in[2] & mask;
+				const auto a4 = in[3] & mask;
+				const auto a5 = in[4] & mask;
+				const auto a6 = in[5] & mask;
+				const auto a7 = in[6] & mask;
+				const auto a8 = in[7] & mask;
+
+				in += 8;
 
 				// Non-black pixels are set to 1 in the bit
 				// mask. We convert the pixels by row, top to
@@ -67,7 +78,17 @@ void threshold(std::vector<uint32_t>& src, std::vector<uint64_t>& dest)
 				// first 64 pixels of a row, the LSB of the mask
 				// uint64_t is the first pixel, and the MSB is
 				// the 64th pixel.
-				out_buf |= (a > 0) ? ((uint64_t)1 << n) : 0;
+
+				const uint8_t bits = ((a1 != 0) << 0) |
+				                     ((a2 != 0) << 1) |
+				                     ((a3 != 0) << 2) |
+				                     ((a4 != 0) << 3) |
+				                     ((a5 != 0) << 4) |
+				                     ((a6 != 0) << 5) |
+				                     ((a7 != 0) << 6) |
+				                     ((a7 != 0) << 7);
+
+				out_buf |= (uint64_t)bits << (n * 8);
 			}
 			*out = out_buf;
 			++out;
