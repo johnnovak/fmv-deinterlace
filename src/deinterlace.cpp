@@ -269,6 +269,40 @@ void erode_vert(std::vector<uint64_t>& src, std::vector<uint64_t>& dest)
 	}
 }
 
+// Deinterlacing strength params
+//
+// low     1 / 2
+// medium  2 / 3
+// high    4 / 5
+// subtle  8 / 9
+// full    1 / 1
+
+static inline uint32_t scale_8_9_rgb(uint32_t color)
+{
+    // Replace /9 with mul+shift approx to avoid divides:
+    // 227/256 ≈ 0.8867 ~ 8/9 (0.8889). Good enough for video.
+    auto scale = [](uint32_t c) -> uint32_t {
+        return (c * 227 + 128) >> 8; // 0..255
+    };
+
+    const auto r =  scale( color        & 0xff);
+    const auto g = (scale((color >> 8)  & 0xff) << 8);
+    const auto b = (scale((color >> 16) & 0xff) << 16);
+    return r | g | b;
+}
+
+void apply_masked_bleed_64(uint64_t m, const uint32_t* in, uint32_t* out)
+{
+    while (m) {
+        const auto k = std::countr_zero(m);
+        const auto in_buf = in[k];
+        const auto scaled = scale_8_9_rgb(in_buf);
+        out[k] |= scaled;
+
+        m &= (m - 1); // clear lowest set bit
+    }
+}
+
 void deinterlace(std::vector<uint32_t>& src, std::vector<uint64_t>& mask,
                  std::vector<uint32_t>& dest)
 {
@@ -282,33 +316,16 @@ void deinterlace(std::vector<uint32_t>& src, std::vector<uint64_t>& mask,
 		auto mask = mask_line;
 
 		for (auto x = 0; x < image_width / 64; ++x) {
-			auto m = *mask;
-
-			for (auto x = 0; x < 64; ++x) {
-				if (m & 1) {
-					const auto in_buf = *in;
-
-					// Deinterlacing strength params
-					//
-					// low     1 / 2
-					// medium  2 / 3
-					// high    4 / 5
-					// subtle  8 / 9
-					// full    1 / 1
-
-					uint64_t scaled = 0;
-					scaled |=   (in_buf        & 0xff) * 8 / 9;
-					scaled |= (((in_buf >> 8)  & 0xff) * 8 / 9) << 8;
-					scaled |= (((in_buf >> 16) & 0xff) * 8 / 9) << 16;
-
-					*out |= scaled;
-				}
-				m >>= 1;
-				++out;
-				++in;
+			const uint64_t m = mask[x];
+			if (m) {
+				// 64 pixels = 64 uint32_t
+				apply_masked_bleed_64(m, in + x * 64, out + x * 64);
 			}
-			++mask;
 		}
+
+		in += image_width;
+		out += image_width;
+
 		mask_line += buffer_pitch;
 	}
 }
@@ -500,6 +517,8 @@ int main(int argc, char* argv[])
 	//
 	//       total                  220 us
 	//
+	//  kklobe changes
+	//       total                   24 us
 
 	double average_ns = 0;
 	for (const auto t : durations_ns) {
